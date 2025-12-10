@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hospital Corridor – People Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #9ca3af;
+            margin-bottom: 1.5rem;
+        }
+        .cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            flex: 1 1 200px;
+            background: #111827;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        .card-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #9ca3af;
+            margin-bottom: 0.35rem;
+        }
+        .card-value {
+            font-size: 1.6rem;
+            font-weight: 600;
+        }
+        .card-sub {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+        canvas {
+            background: #020617;
+            border-radius: 12px;
+            padding: 10px;
+        }
+        .chart-wrap {
+            margin-bottom: 2rem;
+        }
+        a {
+            color: #60a5fa;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Hospital Corridor – People Analytics</h1>
+    <div class="subtitle">
+        Data source: YOLO-based corridor people counter (AOI polygon) → people_log.csv
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <div class="card-label">Total Entries into AOI</div>
+            <div class="card-value">{{ total_entries }}</div>
+            <div class="card-sub">Distinct entry events detected in the corridor zone.</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Peak Occupancy (AOI)</div>
+            <div class="card-value">{{ max_in_zone }}</div>
+            <div class="card-sub">Maximum people simultaneously inside the AOI.</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Average Occupancy (AOI)</div>
+            <div class="card-value">{{ "%.2f"|format(avg_in_zone) }}</div>
+            <div class="card-sub">Average number of people in the AOI over the clip.</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Observation Duration</div>
+            <div class="card-value">{{ "%.1f"|format(duration_sec) }}s</div>
+            <div class="card-sub">Total time covered by the analysed video.</div>
+        </div>
+    </div>
+
+    <div class="chart-wrap">
+        <h2>Occupancy over Time</h2>
+        <p class="subtitle">
+            People inside AOI (corridor polygon) vs. total people visible in frame.
+        </p>
+        <canvas id="peopleChart" height="120"></canvas>
+    </div>
+</div>
+
+<script>
+    const timestamps = {{ timestamps|tojson }};
+    const peopleInZone = {{ people_in_zone|tojson }};
+    const peopleTotal = {{ people_total|tojson }};
+
+    const ctx = document.getElementById('peopleChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: timestamps,
+            datasets: [
+                {
+                    label: 'People in AOI',
+                    data: peopleInZone,
+                    tension: 0.2,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                },
+                {
+                    label: 'Total people in frame',
+                    data: peopleTotal,
+                    tension: 0.2,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time (seconds)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Number of people'
+                    },
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#e5e7eb'
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
